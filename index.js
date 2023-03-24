@@ -2,19 +2,23 @@ const express = require('express')
 const app = express()
 const port = 5000
 const bodyParser = require('body-parser')
-const { User } = require('./model/User')
+
+const config = require('./config/key')
+
+const { Man } = require('./model/Man')
 
 app.use(bodyParser.urlencoded({extended: true}));
-
 app.use(bodyParser.json());
 
 
 const mongoose = require('mongoose')
-mongoose.connect('mongodb+srv://ljpson:ydmbe5HclPpikpeb@studycluster.fpihgtz.mongodb.net/?retryWrites=true&w=majority')
-  .then(() => console.log('MongoDB Connected...'))
-  .catch(err => console.log(err))
-
-app.get('/', (req, res) => { res.send('Hello World!') })
+mongoose.connect(config.mongoURI,
+    {
+        useNewUrlParser: true, useUnifiedTopology: true
+    })
+    .then(() => console.log('MongoDB Connected...'))
+    .catch(err => console.log(err));
+app.get('/', (req, res) => { res.send('Hello World! nodemon') })
 
 app.post('/register', (req, res) => {
 
@@ -22,11 +26,14 @@ app.post('/register', (req, res) => {
 
   // 그것들을 데이터베이스에 넣어준다
 
-  const user = new User(req.body)
+  const man = new Man(req.body)
 
-  user.save((err, doc) => {
-    if(err) return res.status(400).json({success: false, err})
-    return res.status(200).json({success: true})
+  man.save().then(()=>{
+    res.status(200).json({
+      success: true
+    })
+  }).catch((err)=>{
+    res.json({ success: false, err })
   })
 
 })
