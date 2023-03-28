@@ -6,8 +6,8 @@ const cookieParser = require("cookie-parser");
 
 const config = require('./config/key');
 
-// const { Man } = require('./model/Man')
-const { User } = require('./model/User');
+const { auth } = require('./middleware/auth');
+const { User } = require('./models/User');
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
@@ -23,7 +23,12 @@ mongoose.connect(config.mongoURI,
     .catch(err => console.log(err));
 app.get('/', (req, res) => { res.send('Hello World! nodemon') })
 
-app.post("/register", (req, res) => {
+app.get('/api/hello', (req, res) => {
+    
+    res.send("안녕하세요")
+})
+
+app.post("/api/users/register", (req, res) => {
 
     const user = new User(req.body);
 
@@ -35,7 +40,7 @@ app.post("/register", (req, res) => {
     });
 });
 
-app.post('/login',(req, res) =>{
+app.post('/api/users/login',(req, res) =>{
     // 요청된 이메일을 데이터베이스에서 있는지 찾기
     User.findOne({ email: req.body.email }, (err, userInfo) => {
         if (!userInfo)
@@ -60,5 +65,28 @@ app.post('/login',(req, res) =>{
     })
 })
 
+app.get('/api/users/auth', auth ,(req, res) => {
+
+    //여기까지 미들웨어를 통과했다는 이야기는 Authentication이 true라는 말
+    res.status(200).json({
+        _id: req.user._id,
+        isAdmin: req.user.role === 0 ? false : true,
+        isAuth: true,
+        email: req.user.email,
+        name: req.user.name,
+        lastname: req.user.lastname,
+        role: req.user.role,
+        image: req.user.image
+    })
+})
+
+app.get("/api/users/logout", auth, (req, res) => {
+    User.findOneAndUpdate({ _id: req.user._id }, { token: "" }, (err, doc) => {
+        if (err) return res.json({ success: false, err });
+        return res.status(200).send({
+            success: true
+        });
+    });
+});
 
 app.listen(port, () => { console.log(`Example app listening on port ${port}`) })
